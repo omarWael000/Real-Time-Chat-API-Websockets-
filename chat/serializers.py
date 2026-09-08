@@ -3,7 +3,7 @@ from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
 
-from .models import Room
+from .models import Room,Message
 
 class RegisterSerializer(serializers.ModelSerializer):
 
@@ -40,5 +40,17 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model= Room
-        fields = ['id', 'name', 'created_at']
-        read_only_fields = ['id', 'created_at']
+        fields = ['id','name','created_at']
+        read_only_fields=['id','created_at']
+       
+
+
+
+
+class MessageSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Message
+        fields=fields = ['id','content','user','room','created_at']
+        read_only_fields=['id','created_at','user']
+        
