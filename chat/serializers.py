@@ -40,8 +40,8 @@ class RoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model= Room
-        fields = ['id','name','created_at']
-        read_only_fields=['id','created_at']
+        fields = ['id','name','owner','members','created_at']
+        read_only_fields=['id','owner','members','created_at']
        
 
 
@@ -53,4 +53,7 @@ class MessageSerializer(serializers.ModelSerializer):
         model=Message
         fields=fields = ['id','content','user','room','created_at']
         read_only_fields=['id','created_at','user']
-        
+
+
+class AddMemberSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField()

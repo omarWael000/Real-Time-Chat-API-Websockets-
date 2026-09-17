@@ -6,9 +6,11 @@ from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 
-from .serializers import RegisterSerializer,LoginSerializer,RoomSerializer,MessageSerializer
+from .serializers import RegisterSerializer,LoginSerializer,RoomSerializer,MessageSerializer,AddMemberSerializer
 
 from .models import Room,Message
+
+from django.contrib.auth.models import User
 
 class RoomView(APIView):
     permission_classes = [IsAuthenticated]
@@ -30,7 +32,8 @@ class RoomView(APIView):
         serializer=RoomSerializer(data=request.data)
 
         if serializer.is_valid():
-            serializer.save()
+            room = serializer.save(owner=request.user)
+            room.members.add(request.user)
             return Response(serializer.data,status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
@@ -48,7 +51,15 @@ class MessageView(APIView):
 
         else:
             room = get_object_or_404(Room, id=id)
+
+            if not room.members.filter(id=request.user.id).exists():
+                return Response(
+                {"detail": "You are not a member of this room."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
             messages = Message.objects.filter(room=room)
+
 
         serializer= MessageSerializer(messages,many=True)
         return Response(serializer.data)
@@ -95,3 +106,33 @@ class LoginView(APIView):
             return Response({'token':token.key})
 
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+        
+class RoomMemberView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self,request,id):
+
+        room=get_object_or_404(Room,id=id)
+
+        if room.owner != request.user:
+            return Response(
+                {"detail": "Only the room owner can add members."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer= AddMemberSerializer(data=request.data)
+
+        if serializer.is_valid():
+            user= get_object_or_404(User,id=serializer.validated_data['user_id'])
+            room.members.add(user)
+
+            return Response(
+                {"detail": "User added to room."},
+                status=status.HTTP_200_OK
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
